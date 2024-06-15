@@ -5,10 +5,7 @@ use windows::{
 
 fn main() -> Result<()> {
     unsafe {
-        CoInitializeEx(
-            None,
-            COINIT_MULTITHREADED
-        )?;
+        CoInitializeEx(None, COINIT_MULTITHREADED).ok()?;
 
         CoInitializeSecurity(
             None,
@@ -22,26 +19,13 @@ fn main() -> Result<()> {
             None,
         )?;
 
-        let locator: IWbemLocator = CoCreateInstance(
-            &WbemLocator,
-            None,
-            CLSCTX_INPROC_SERVER
-        )?;
-
+        let locator: IWbemLocator = CoCreateInstance(&WbemLocator, None, CLSCTX_INPROC_SERVER)?;
 
         /*
             Try and query Win32_LogicalDisk from cimv2
         */
         let server =
-            locator.ConnectServer(
-                &BSTR::from("root\\cimv2"),
-                None,
-                None,
-                None,
-                0,
-                None,
-                None
-            )?;
+            locator.ConnectServer(&BSTR::from("root\\cimv2"), None, None, None, 0, None, None)?;
 
         let query = server.ExecQuery(
             &BSTR::from("WQL"),
@@ -53,23 +37,12 @@ fn main() -> Result<()> {
         loop {
             let mut row = [None; 1];
             let mut returned = 0;
-            query.Next(
-                WBEM_INFINITE,
-                &mut row,
-                &mut returned
-            ).ok()?;
+            query.Next(WBEM_INFINITE, &mut row, &mut returned).ok()?;
 
             if let Some(row) = &row[0] {
+                let mut value: VARIANT = Default::default();
 
-                let mut value:VARIANT = Default::default();
-
-                row.Get(
-                    w!("Caption"),
-                    0,
-                    &mut value,
-                    None,
-                    None
-                )?;
+                row.Get(w!("Caption"), 0, &mut value, None, None)?;
                 println!(
                     "[i] Drive Letter\t: {}",
                     VarFormat(
@@ -81,32 +54,33 @@ fn main() -> Result<()> {
                     )?
                 );
 
-
                 /*
                     Try and query Win32_EncryptableVolume from MicrosoftVolumeEncryption
                 */
 
-                let fuck =
-                    format!("SELECT * FROM Win32_EncryptableVolume Where DriveLetter='{}'", VarFormat(
+                let fuck = format!(
+                    "SELECT * FROM Win32_EncryptableVolume Where DriveLetter='{}'",
+                    VarFormat(
                         &value,
                         None,
                         VARFORMAT_FIRST_DAY_SYSTEMDEFAULT,
                         VARFORMAT_FIRST_WEEK_SYSTEMDEFAULT,
                         0
-                    )?.to_string());
+                    )?
+                    .to_string()
+                );
 
                 println!("[*] WMI Query\t\t: {}", fuck);
 
-                let server2 =
-                    locator.ConnectServer(
-                        &BSTR::from("root\\cimv2\\Security\\MicrosoftVolumeEncryption"),
-                        None,
-                        None,
-                        None,
-                        0,
-                        None,
-                        None
-                    )?;
+                let server2 = locator.ConnectServer(
+                    &BSTR::from("root\\cimv2\\Security\\MicrosoftVolumeEncryption"),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                    None,
+                )?;
 
                 let query2 = server2.ExecQuery(
                     &BSTR::from("WQL"),
@@ -118,22 +92,12 @@ fn main() -> Result<()> {
                 loop {
                     let mut row2 = [None; 1];
                     let mut returned2 = 0;
-                    query2.Next(
-                        WBEM_INFINITE,
-                        &mut row2,
-                        &mut returned2
-                    ).ok()?;
+                    query2.Next(WBEM_INFINITE, &mut row2, &mut returned2).ok()?;
 
                     if let Some(row2) = &row2[0] {
                         let mut value2 = Default::default();
 
-                        row2.Get(
-                            w!("DeviceID"),
-                            0,
-                            &mut value2,
-                            None,
-                            None
-                        )?;
+                        row2.Get(w!("DeviceID"), 0, &mut value2, None, None)?;
                         println!(
                             "[*] DeviceID\t\t: {}",
                             VarFormat(
@@ -145,13 +109,7 @@ fn main() -> Result<()> {
                             )?
                         );
 
-                        row2.Get(
-                            w!("PersistentVolumeID"),
-                            0,
-                            &mut value2,
-                            None,
-                            None
-                        )?;
+                        row2.Get(w!("PersistentVolumeID"), 0, &mut value2, None, None)?;
                         println!(
                             "[*] PersistentVolumeID\t: {}",
                             VarFormat(
@@ -163,13 +121,7 @@ fn main() -> Result<()> {
                             )?
                         );
 
-                        row2.Get(
-                            w!("DriveLetter"),
-                                 0,
-                                 &mut value2,
-                                 None,
-                                 None
-                        )?;
+                        row2.Get(w!("DriveLetter"), 0, &mut value2, None, None)?;
                         println!(
                             "[*] DriveLetter\t\t: {}",
                             VarFormat(
@@ -181,13 +133,7 @@ fn main() -> Result<()> {
                             )?
                         );
 
-                        row2.Get(
-                            w!("ProtectionStatus"),
-                                 0,
-                                 &mut value2,
-                                 None,
-                                 None
-                        )?;
+                        row2.Get(w!("ProtectionStatus"), 0, &mut value2, None, None)?;
                         println!(
                             "[*] ProtectionStatus\t: {}",
                             VarFormat(
